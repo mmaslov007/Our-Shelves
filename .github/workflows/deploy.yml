@@ -49,10 +49,20 @@ jobs:
       - name: Verify frontend is responding (port 5173)
         run: |
           echo "Checking http://${{ secrets.SSH_HOST }}:5173 ..."
-          status=$(curl -s -o /dev/null -w "%{http_code}" "http://${{ secrets.SSH_HOST }}:5173")
-          echo "HTTP status: $status"
-          if [ "$status" -lt 200 ] || [ "$status" -ge 400 ]; then
-            echo "Health check failed."
-            exit 1
-          fi
-          echo "Deployment health check passed."
+          
+          for i in {1..30}; do
+            status=$(curl -s -o /dev/null -w "%{http_code}" "http://${{ secrets.SSH_HOST }}:5173" || true)
+            echo "Attempt $i - HTTP status: ${status:-<no response>}"
+
+            # If we got a valid 2xx or 3xx status, consider it healthy
+            if [ -n "$status" ] && [ "$status" -ge 200 ] && [ "$status" -lt 400 ]; then
+              echo "Deployment health check passed with status $status."
+              exit 0
+            fi
+
+            echo "Not ready yet, waiting 5 seconds..."
+            sleep 5
+          done
+
+          echo "Health check failed after 30 attempts."
+          exit 1
