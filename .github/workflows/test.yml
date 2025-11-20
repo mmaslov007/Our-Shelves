@@ -46,7 +46,7 @@ jobs:
 
       - name: Run frontend unit tests
         working-directory: frontend
-        run: npm test -- --runInBand
+        run: npm test
 
       - name: Run backend integration tests
         working-directory: backend
