@@ -1,0 +1,58 @@
+name: CD - Deploy to VM
+
+on:
+  workflow_run:
+    workflows: ["CI - Run All Tests"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (for metadata only)
+        uses: actions/checkout@v4
+
+      - name: Start SSH agent and add key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Add VM to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy on VM (git pull + docker compose)
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          set -e
+
+          # go to app directory on the VM
+          cd ~/Our-Shelves
+
+          echo "Pulling latest code from main..."
+          git pull origin main
+
+          echo "Restarting Docker stack..."
+          docker compose down
+          docker compose up -d --build
+
+          echo "Deployment commands completed."
+          EOF
+
+      - name: Verify frontend is responding (port 5173)
+        run: |
+          echo "Checking http://${{ secrets.SSH_HOST }}:5173 ..."
+          status=$(curl -s -o /dev/null -w "%{http_code}" "http://${{ secrets.SSH_HOST }}:5173")
+          echo "HTTP status: $status"
+          if [ "$status" -lt 200 ] || [ "$status" -ge 400 ]; then
+            echo "Health check failed."
+            exit 1
+          fi
+          echo "Deployment health check passed."
