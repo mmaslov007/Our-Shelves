@@ -342,5 +342,94 @@ docker compose down
 
 ---
 
+# Continuous Integration (GitHub Actions)
+
+This project includes a full automated testing pipeline using **GitHub Actions**, ensuring that all parts of the application are validated before merging into protected branches.
+
+The workflow file is located at:
+
+```
+.github/workflows/test.yml
+```
+
+## What the CI Pipeline Does
+
+The CI runs automatically on:
+
+- **Pushes** to `main` and `dev`
+- **Pull requests** targeting `main` and `dev`
+
+Each run executes the full test suite:
+
+## 1. Backend Unit Tests (Jest)
+- Runs:  
+  ```sh
+  cd backend && npm test
+  ```
+- Ensures all backend logic modules load and behave correctly.
+
+## 2. Frontend Unit Tests (Vitest)
+- Runs:
+  ```sh
+  cd frontend && npm test
+  ```
+- Validates React components and client-side logic.
+
+## 3. Backend Integration Tests (Jest + Testcontainers)
+- Spins up an ephemeral MySQL container in CI  
+- Runs:
+  ```sh
+  cd backend && npm run test:integration
+  ```
+
+## 4. End-to-End Tests (Cypress)
+- Starts full stack via Docker Compose:
+  ```sh
+  docker compose up -d
+  ```
+- Waits for the frontend to become available  
+- Executes Cypress in headless mode against `http://localhost:5173`
+
+---
+
+# Merge Protection
+
+If **any** test suite fails:
+
+- The workflow fails  
+- The pull request is blocked  
+- The code cannot be merged into `main` or `dev`
+
+This ensures only fully tested, working code reaches the protected branches.
+
+---
+
+# Viewing Test Results
+
+You can view each CI run by navigating to:
+
+**GitHub → Actions → CI - Run All Tests**
+
+Each job exposes logs for:
+
+- Dependency installation  
+- Backend unit tests  
+- Frontend unit tests  
+- Integration tests  
+- Docker startup  
+- Cypress tests  
+
+---
+
+# Node Version Consistency
+
+The CI pipeline uses:
+
+**Node v20.19.0**
+
+This matches the project’s development environment and ensures consistent module loading behavior across Windows 11 (local) and Ubuntu (CI).
+
+---
+
 ## License
 This project is for educational use as part of a student project at Green River College.
