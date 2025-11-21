@@ -417,17 +417,7 @@ Each job exposes logs for:
 - Frontend unit tests  
 - Integration tests  
 - Docker startup  
-- Cypress tests  
-
----
-
-## Node Version Consistency
-
-The CI pipeline uses:
-
-**Node v20.19.0**
-
-This matches the project’s development environment and ensures consistent module loading behavior across Windows 11 (local) and Ubuntu (CI).
+- Cypress tests
 
 ---
 
@@ -452,8 +442,6 @@ It is responsible for:
 - Pulling the latest code from the `main` branch on the VM.
 - Rebuilding and restarting the Docker Compose stack (installing dependencies inside containers as needed).
 - Verifying that the frontend is responding successfully after deployment.
-
-This satisfies the acceptance criteria for **Task 2: GitHub Actions - Automated Deployment**.
 
 ---
 
@@ -591,35 +579,6 @@ Example step:
 - The step polls the frontend endpoint (`http://<SSH_HOST>:5173`) up to 30 times.
 - If a valid `2xx` or `3xx` response is received, the deployment is considered successful.
 - If the service does not become healthy within the retry window, the workflow exits with a non-zero status, marking the deployment as **failed**.
-
-This satisfies the requirement that **the workflow verifies deployment success**.
-
----
-
-## Summary of Acceptance Criteria Coverage
-
-- **`.github/workflows/deploy.yml` created and configured**  
-  – Deployment workflow file exists and defines CD behavior.
-
-- **Workflow triggers only on successful merge to `main` branch**  
-  – Uses `workflow_run` with a conditional `if` for successful `CI - Run All Tests` runs on `main`.
-
-- **Workflow uses SSH to connect to VM (secrets configured in GitHub)**  
-  – Uses `webfactory/ssh-agent` and `SSH_KEY`, `SSH_HOST`, `SSH_USER` secrets.
-
-- **Workflow pulls latest code on VM**  
-  – Executes `git pull origin main` on the VM in the project directory.
-
-- **Workflow installs dependencies if needed**  
-  – `docker compose up -d --build` rebuilds images and installs dependencies within containers.
-
-- **Workflow restarts application services**  
-  – `docker compose down` followed by `docker compose up -d --build` restarts the full stack.
-
-- **Workflow verifies deployment success**  
-  – Health-check loop using `curl` against the frontend; fails the job if the app never becomes healthy.
-
-This CD pipeline ensures that every successful merge to `main` is automatically deployed to the VM, with validation that the application is up and serving requests.
 
 ---
 
